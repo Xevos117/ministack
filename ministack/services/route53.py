@@ -839,7 +839,7 @@ def _associate_vpc(zone_id: str, body: bytes):
             return _error_response(
                 "ConflictingDomainExists",
                 f"The VPC {vpc['VPCId']} in {vpc['VPCRegion']} is already associated with "
-                f"a hosted zone named {zone['name']}.")
+                f"a hosted zone named {zone['name']}")
         zone.setdefault("vpcs", []).append(vpc)
         change = _new_change(comment)
     return _xml_response("AssociateVPCWithHostedZoneResponse",

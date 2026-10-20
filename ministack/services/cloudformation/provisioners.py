@@ -8899,6 +8899,17 @@ def _elbv2_listener_actions(props, lb_arn, prop="DefaultActions"):
     return actions
 
 
+def _elbv2_listener_tls(listener, props):
+    """SslPolicy and the default certificate from the template, as CreateListener stores them."""
+    certs = [c["CertificateArn"] for c in props.get("Certificates") or []
+             if isinstance(c, dict) and c.get("CertificateArn")]
+    if len(certs) > 1:
+        raise ValueError(f"Up to '1' certificate ARNs can be specified, but '{len(certs)}' were specified")
+    listener.pop("SslPolicy", None)
+    listener.pop("Certificates", None)
+    _alb._apply_tls_settings(listener, certs, props.get("SslPolicy"))
+
+
 def _elbv2_listener_create(logical_id, props, stack_name):
     lb_arn = props.get("LoadBalancerArn", "")
     lb = _alb._lbs.get(lb_arn)
@@ -8922,6 +8933,7 @@ def _elbv2_listener_create(logical_id, props, stack_name):
         "Protocol": props.get("Protocol", "HTTP"),
         "DefaultActions": actions,
     }
+    _elbv2_listener_tls(listener, props)
     _alb._listeners[listener_arn] = listener
     _alb._tags[listener_arn] = _elbv2_tags(props.get("Tags"))
 
@@ -8975,6 +8987,7 @@ def _elbv2_listener_update(physical_id, old_props, new_props, stack_name,
 
     listener["Port"] = int(new_props.get("Port", 80) or 80)
     listener["Protocol"] = new_props.get("Protocol", "HTTP")
+    _elbv2_listener_tls(listener, new_props)
     actions = _elbv2_listener_actions(new_props, listener["LoadBalancerArn"])
     listener["DefaultActions"] = actions
     for rule in _alb._rules.values():
@@ -9669,6 +9682,7 @@ def _sd_namespace_create_for(ns_type):
         namespace, err = _sd._create_namespace_record(
             name, ns_type, props.get("Description"), props.get("Tags"),
             _sd_soa_ttl(props) if ns_type != "HTTP" else None,
+            props.get("Vpc") if ns_type == "DNS_PRIVATE" else None,
         )
         if err:
             raise ValueError(f"{resource_type} create failed: {err[2]!r}")

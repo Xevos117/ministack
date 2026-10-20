@@ -2057,7 +2057,9 @@ def test_elbv2_listener_rejects_more_than_one_default_certificate(elbv2, tls_lb)
     with pytest.raises(ClientError) as exc:
         elbv2.create_listener(LoadBalancerArn=lb_arn, Protocol="HTTPS", Port=443,
                               Certificates=two, DefaultActions=_TLS_ACTION)
-    assert exc.value.response["Error"]["Code"] == "ValidationError"
+    assert exc.value.response["Error"]["Code"] == "TooManyCertificates"
+    assert exc.value.response["Error"]["Message"] == (
+        "Up to '1' certificate ARNs can be specified, but '2' were specified")
     assert elbv2.describe_listeners(LoadBalancerArn=lb_arn)["Listeners"] == []
 
     l_arn = elbv2.create_listener(
@@ -2066,7 +2068,7 @@ def test_elbv2_listener_rejects_more_than_one_default_certificate(elbv2, tls_lb)
     )["Listeners"][0]["ListenerArn"]
     with pytest.raises(ClientError) as exc:
         elbv2.modify_listener(ListenerArn=l_arn, Port=8443, Certificates=two)
-    assert exc.value.response["Error"]["Code"] == "ValidationError"
+    assert exc.value.response["Error"]["Code"] == "TooManyCertificates"
     described = elbv2.describe_listeners(ListenerArns=[l_arn])["Listeners"][0]
     assert described["Port"] == 443
     assert described["Certificates"] == [{"CertificateArn": _TLS_CERT}]

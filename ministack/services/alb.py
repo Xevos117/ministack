@@ -563,8 +563,8 @@ def _default_certificate(params):
     certs = _parse_certificate_arns(params)
     if len(certs) > 1:
         return None, _error(
-            "ValidationError",
-            "Certificates must contain exactly one default certificate.")
+            "TooManyCertificates",
+            f"Up to '1' certificate ARNs can be specified, but '{len(certs)}' were specified")
     return certs, None
 
 

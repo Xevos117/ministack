@@ -3076,6 +3076,10 @@ def _update_archive(data):
     })
 
 
+_ARCHIVE_SUMMARY_KEYS = ("ArchiveName", "EventSourceArn", "State", "StateReason",
+                         "RetentionDays", "SizeBytes", "EventCount", "CreationTime")
+
+
 def _list_archives(data):
     prefix = data.get("NamePrefix", "")
     source_arn = data.get("EventSourceArn", "")
@@ -3088,7 +3092,7 @@ def _list_archives(data):
             continue
         if state and archive.get("State") != state:
             continue
-        results.append(archive)
+        results.append({k: archive[k] for k in _ARCHIVE_SUMMARY_KEYS if k in archive})
     return json_response({"Archives": results})
 
 
